@@ -1,0 +1,2 @@
+1. Implemented all user and entry endpoints with proper error => Blandine
+2. Configured MongoDB connection and deployed API to Render => Blandine

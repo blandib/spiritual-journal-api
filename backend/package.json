@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "mongodb": "^6.18.0",
+    "mongoose": "^8.17.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
