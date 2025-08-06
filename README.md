@@ -6,7 +6,7 @@ Live Demo: https://spiritual-journal-api.onrender.com
 
 Swagger UI Link: http://localhost:3000/api-docs – for local development
 
-Live Swagger UI (if deployed): Replace with your Render URL, e.g. https://spiritual-journaling-api.onrender.com/api-docs
+Live Swagger UI https://spiritual-journal-api.onrender.com/api-docs/
 
 Swagger includes:
 
