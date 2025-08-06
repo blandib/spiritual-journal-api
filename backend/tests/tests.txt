@@ -1,2 +1,22 @@
-1. Implemented all user and entry endpoints with proper error => Blandine
-2. Configured MongoDB connection and deployed API to Render => Blandine
+✔ Implemented Users endpoints: By Blandine
+   - GET /users
+   - GET /users/:id
+   - PUT /users/:id
+   - DELETE /users/:id
+   - All routes include error handling and return appropriate status codes.
+
+✔ Implemented Entries endpoints: By Blandine
+   - GET /entries
+   - GET /entries/:id
+   - POST /entries
+   - All routes include error handling and return appropriate status codes.
+
+✔ Deployed API to Render: By Blandine
+   - Live URL: [https://spiritual-journal-api.onrender.com]
+
+✔ Initial Swagger documentation setup: By Blandine
+   - Accessible at `/api-docs`
+   - Includes Users and Entries endpoints
+
+✔ MongoDB Atlas connected and tested: By Blandine
+
