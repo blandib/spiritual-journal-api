@@ -5,6 +5,36 @@ const { ObjectId } = require('mongodb');
 const { validateUserData, validateObjectId } = require('../middleware/validators');
 const errorHandler = require('../middleware/errorHandler');
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: User account management
+ */
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // GET all users
 router.get('/', async (req, res) => {
   try {
@@ -16,6 +46,33 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: 507f1f77bcf86cd799439011
+ *     responses:
+ *       200:
+ *         description: User data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid ID format
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // GET single user
 router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
   try {
@@ -28,6 +85,32 @@ router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: Create a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       201:
+ *         description: Created user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already exists
+ *       500:
+ *         description: Server error
+ */
 // POST create user
 router.post('/', validateUserData, errorHandler, async (req, res) => {
   const user = {
@@ -52,6 +135,39 @@ router.post('/', validateUserData, errorHandler, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   put:
+ *     summary: Update user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/User'
+ *     responses:
+ *       200:
+ *         description: Updated user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 
 // PUT update user
 router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
@@ -79,6 +195,26 @@ router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User deleted
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // DELETE user
 router.delete('/:id', validateObjectId, async (req, res) => {
   try {
@@ -94,5 +230,7 @@ router.delete('/:id', validateObjectId, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+
 
 module.exports = router;
