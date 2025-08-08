@@ -24,8 +24,8 @@ const connectDB = async () => {
 };
 
 // ===== 3. ROUTES =====
-app.use('/users', require('./routes/userRoutes'));
-app.use('/entries', require('./routes/entryRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/entries', require('./routes/entryRoutes'));
 app.use('/test', require('./routes/testRoutes'));
 
 // ===== 4. SWAGGER =====
