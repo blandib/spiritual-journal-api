@@ -1,10 +1,8 @@
-
+// routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
 const { ObjectId } = require('mongodb');
 const { validateUserData, validateObjectId } = require('../middleware/validators');
-const errorHandler = require('../middleware/errorHandler');
-
 
 /**
  * @swagger
@@ -15,7 +13,7 @@ const errorHandler = require('../middleware/errorHandler');
 
 /**
  * @swagger
- * /users:
+ * /api/users:
  *   get:
  *     summary: Get all users
  *     tags: [Users]
@@ -30,25 +28,19 @@ const errorHandler = require('../middleware/errorHandler');
  *                 $ref: '#/components/schemas/User'
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
-// GET all users
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
-    const db = req.app.locals.db;
-    const users = await db.collection('users').find({}).toArray();
-    res.json(users);
+    const users = await req.app.locals.db.collection('users').find({}).toArray();
+    return res.status(200).json(users);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
 /**
  * @swagger
- * /users/{id}:
+ * /api/users/{id}:
  *   get:
  *     summary: Get user by ID
  *     tags: [Users]
@@ -73,21 +65,22 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Server error
  */
-// GET single user
-router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
+router.get('/:id', validateObjectId, async (req, res, next) => {
   try {
-    const db = req.app.locals.db;
-    const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
+    const user = await req.app.locals.db
+      .collection('users')
+      .findOne({ _id: new ObjectId(req.params.id) });
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    return res.status(200).json(user);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
 /**
  * @swagger
- * /users:
+ * /api/users:
  *   post:
  *     summary: Create a new user
  *     tags: [Users]
@@ -97,6 +90,9 @@ router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/User'
+ *           example:
+ *             name: "Jane Doe"
+ *             email: "jane@example.com"
  *     responses:
  *       201:
  *         description: Created user
@@ -111,34 +107,26 @@ router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
  *       500:
  *         description: Server error
  */
-// POST create user
-router.post('/', validateUserData, errorHandler, async (req, res) => {
-  const user = {
-    name: req.body.name,
-    email: req.body.email,
-    createdAt: new Date()
-  };
-  
+router.post('/', validateUserData, async (req, res, next) => {
   try {
-    const db = req.app.locals.db;
-    
-    // Check for existing email
-    const existingUser = await db.collection('users').findOne({ email: user.email });
-    if (existingUser) {
-      return res.status(409).json({ message: 'Email already exists' });
-    }
-    
-    const result = await db.collection('users').insertOne(user);
-    const newUser = await db.collection('users').findOne({ _id: result.insertedId });
-    res.status(201).json(newUser);
+    const doc = { name: req.body.name, email: req.body.email, createdAt: new Date() };
+
+    const existing = await req.app.locals.db
+      .collection('users')
+      .findOne({ email: doc.email });
+    if (existing) return res.status(409).json({ error: 'Email already exists' });
+
+    const r = await req.app.locals.db.collection('users').insertOne(doc);
+    const created = await req.app.locals.db.collection('users').findOne({ _id: r.insertedId });
+    return res.status(201).json(created);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
 /**
  * @swagger
- * /users/{id}:
+ * /api/users/{id}:
  *   put:
  *     summary: Update user
  *     tags: [Users]
@@ -154,6 +142,9 @@ router.post('/', validateUserData, errorHandler, async (req, res) => {
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/User'
+ *           example:
+ *             name: "Jane Updated"
+ *             email: "jane.updated@example.com"
  *     responses:
  *       200:
  *         description: Updated user
@@ -162,42 +153,34 @@ router.post('/', validateUserData, errorHandler, async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       400:
- *         description: Invalid input
+ *         description: Invalid input or ID
  *       404:
  *         description: User not found
  *       500:
  *         description: Server error
  */
-
-// PUT update user
-router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
+router.put('/:id', validateObjectId, validateUserData, async (req, res, next) => {
   try {
-    const db = req.app.locals.db;
-    const updateData = {
-      name: req.body.name,
-      email: req.body.email,
-      updatedAt: new Date()  // Add update timestamp
-    };
-    
-    const result = await db.collection('users').updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updateData }
-    );
-    
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
-    res.json(updatedUser);
+    const update = { name: req.body.name, email: req.body.email, updatedAt: new Date() };
+
+    const r = await req.app.locals.db
+      .collection('users')
+      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: update });
+
+    if (r.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
+
+    const updated = await req.app.locals.db
+      .collection('users')
+      .findOne({ _id: new ObjectId(req.params.id) });
+    return res.status(200).json(updated);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
 /**
  * @swagger
- * /users/{id}:
+ * /api/users/{id}:
  *   delete:
  *     summary: Delete user
  *     tags: [Users]
@@ -208,26 +191,25 @@ router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
  *         schema:
  *           type: string
  *     responses:
- *       200:
- *         description: User deleted
+ *       204:
+ *         description: No Content (deleted)
+ *       400:
+ *         description: Invalid ID format
  *       404:
  *         description: User not found
  *       500:
  *         description: Server error
  */
-// DELETE user
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete('/:id', validateObjectId, async (req, res, next) => {
   try {
-    const db = req.app.locals.db;
-    const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
-    
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    res.json({ message: 'User deleted' });
+    const r = await req.app.locals.db
+      .collection('users')
+      .deleteOne({ _id: new ObjectId(req.params.id) });
+
+    if (r.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
+    return res.status(204).end();
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    return next(err);
   }
 });
 
