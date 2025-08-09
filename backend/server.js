@@ -1,12 +1,12 @@
-require('dotenv').config();
-const express = require('express');
-const { MongoClient } = require('mongodb');
-const path = require('path');
+require("dotenv").config();
+const express = require("express");
+const { MongoClient } = require("mongodb");
+const path = require("path");
 const app = express();
 
 // ===== 1. BASIC CONFIG =====
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 // ===== 2. DATABASE CONNECTION =====
 const connectDB = async () => {
@@ -15,33 +15,35 @@ const connectDB = async () => {
     await client.connect();
     const db = client.db();
     app.locals.db = db;
-    console.log('✅ MongoDB Connected');
+    console.log("✅ MongoDB Connected");
     return db;
   } catch (err) {
-    console.error('❌ MongoDB Connection Failed');
+    console.error("❌ MongoDB Connection Failed");
     process.exit(1);
   }
 };
 
 // ===== 3. ROUTES =====
-app.use('/users', require('./routes/userRoutes'));
-app.use('/entries', require('./routes/entryRoutes'));
-app.use('/test', require('./routes/testRoutes'));
+app.use("/users", require("./routes/usersRoutes"));
+app.use("/entries", require("./routes/entriesRoute"));
+app.use("/comments", require("./routes/commentsRoute"));
+app.use("/categories", require("./routes/categoriesRoute"));
+app.use("/test", require("./routes/testRoutes"));
 
 // ===== 4. SWAGGER =====
-require('./swagger')(app);
+require("./swagger")(app);
 
 // ===== 5. CORE ROUTES =====
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', db: !!app.locals.db });
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "OK", db: !!app.locals.db });
 });
 
 // ===== 6. ERROR HANDLER (MUST BE LAST) =====
-app.use(require('./middleware/errorHandler'));
+app.use(require("./middleware/errorHandler"));
 
 // ===== 7. SERVER START =====
 const startServer = async () => {

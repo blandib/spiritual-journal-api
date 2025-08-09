@@ -1,21 +1,25 @@
-const mongodb = require('mongodb');
+const mongoose = require('mongoose');
 
-const entrySchema = new mongodb.Schema({
-  title: { type: String, required: true },
-  content: { type: String, required: true },
-  userId: { 
-    type: mongodb.Schema.Types.ObjectId, 
-    ref: 'User',
-    required: true 
-  },
-  tags: [String],
-  mood: String,
-  scripture: String,
-  visibility: { 
-    type: String, 
-    enum: ['private', 'public'], 
-    default: 'private' 
-  }
+const entrySchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true,
+    },
+    content: {
+        type: String,
+        required: true,
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
+    tags: {
+        type: [String],
+        default: [],
+    },
 }, { timestamps: true });
 
-module.exports = mongodb.model('Entry', entrySchema);
+const Entry = mongoose.model('Entry', entrySchema);
+
+module.exports = Entry;
