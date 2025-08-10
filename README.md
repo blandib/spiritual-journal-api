@@ -2,6 +2,9 @@
  What will the API do?
 This API powers a digital journaling platform where users can document their spiritual journey, reflect on scriptures, and share insights with a community. It provides the backend functionality for creating, organizing, and sharing faith-based reflections
 
+live Demo Development Sever index-page: http://localhost:3000
+
+
 Live Demo: https://spiritual-journal-api.onrender.com
 
 Swagger UI Link: http://localhost:3000/api-docs – for local development
@@ -22,3 +25,6 @@ git clone the repo
 cd spiritual-journaling-api/backend
 npm install
 npm start
+npm run unit-test (to run unit tests)
+npm run test (to run integration tests)
+npm run dev
