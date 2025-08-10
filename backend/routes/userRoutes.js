@@ -1,10 +1,12 @@
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { ObjectId } = require('mongodb');
-const { validateUserData, validateObjectId } = require('../middleware/validators');
-const errorHandler = require('../middleware/errorHandler');
-
+const { ObjectId } = require("mongodb");
+const {
+  validateUserData,
+  validateObjectId,
+} = require("../middleware/validators");
+const errorHandler = require("../middleware/errorHandler");
+const ensureAuthenticated = require("../middleware/auth");
 
 /**
  * @swagger
@@ -36,13 +38,13 @@ const errorHandler = require('../middleware/errorHandler');
  *               $ref: '#/components/schemas/Error'
  */
 // GET all users
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const users = await db.collection('users').find({}).toArray();
+    const users = await db.collection("users").find({}).toArray();
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -74,14 +76,16 @@ router.get('/', async (req, res) => {
  *         description: Server error
  */
 // GET single user
-router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
+router.get("/:id", validateObjectId, errorHandler, async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const user = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(req.params.id) });
+    if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -112,27 +116,40 @@ router.get('/:id', validateObjectId, errorHandler, async (req, res) => {
  *         description: Server error
  */
 // POST create user
-router.post('/', validateUserData, errorHandler, async (req, res) => {
-  const user = {
-    name: req.body.name,
-    email: req.body.email,
-    createdAt: new Date()
-  };
-  
+router.post("/", ensureAuthenticated, async (req, res) => {
+  const { username, email, password } = req.body;
+  if (!username || typeof username !== "string" || username.trim() === "") {
+    return res
+      .status(400)
+      .json({ error: "Username is required and must be a non-empty string." });
+  }
+  if (!email || typeof email !== "string" || !email.includes("@")) {
+    return res.status(400).json({ error: "Valid email is required." });
+  }
+  if (!password || typeof password !== "string" || password.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 6 characters." });
+  }
+
   try {
     const db = req.app.locals.db;
-    
+
     // Check for existing email
-    const existingUser = await db.collection('users').findOne({ email: user.email });
+    const existingUser = await db
+      .collection("users")
+      .findOne({ email: user.email });
     if (existingUser) {
-      return res.status(409).json({ message: 'Email already exists' });
+      return res.status(409).json({ message: "Email already exists" });
     }
-    
-    const result = await db.collection('users').insertOne(user);
-    const newUser = await db.collection('users').findOne({ _id: result.insertedId });
+
+    const result = await db.collection("users").insertOne(user);
+    const newUser = await db
+      .collection("users")
+      .findOne({ _id: result.insertedId });
     res.status(201).json(newUser);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -170,28 +187,44 @@ router.post('/', validateUserData, errorHandler, async (req, res) => {
  */
 
 // PUT update user
-router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
+router.put("/:id", ensureAuthenticated, async (req, res) => {
+  const { username, email, password } = req.body;
+  if (username && (typeof username !== "string" || username.trim() === "")) {
+    return res
+      .status(400)
+      .json({ error: "Username must be a non-empty string." });
+  }
+  if (email && (typeof email !== "string" || !email.includes("@"))) {
+    return res.status(400).json({ error: "Valid email required." });
+  }
+  if (password && (typeof password !== "string" || password.length < 6)) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 6 characters." });
+  }
+
   try {
     const db = req.app.locals.db;
     const updateData = {
       name: req.body.name,
       email: req.body.email,
-      updatedAt: new Date()  // Add update timestamp
+      updatedAt: new Date(), // Add update timestamp
     };
-    
-    const result = await db.collection('users').updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updateData }
-    );
-    
+
+    const result = await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
+
     if (result.matchedCount === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(req.params.id) });
+
+    const updatedUser = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(req.params.id) });
     res.json(updatedUser);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -216,21 +249,21 @@ router.put('/:id', validateObjectId, validateUserData, async (req, res) => {
  *         description: Server error
  */
 // DELETE user
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete("/:id", validateObjectId, async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const result = await db.collection('users').deleteOne({ _id: new ObjectId(req.params.id) });
-    
+    const result = await db
+      .collection("users")
+      .deleteOne({ _id: new ObjectId(req.params.id) });
+
     if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
-    
-    res.json({ message: 'User deleted' });
+
+    res.json({ message: "User deleted" });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
-
-
 
 module.exports = router;

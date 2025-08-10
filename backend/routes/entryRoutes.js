@@ -1,10 +1,12 @@
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { ObjectId } = require('mongodb');
-const { validateEntryData, validateObjectId } = require('../middleware/validators');
-const errorHandler = require('../middleware/errorHandler');
-
+const { ObjectId } = require("mongodb");
+const {
+  validateEntryData,
+  validateObjectId,
+} = require("../middleware/validators");
+const errorHandler = require("../middleware/errorHandler");
+const ensureAuthenticated = require("../middleware/auth");
 
 /**
  * @swagger
@@ -38,19 +40,19 @@ const errorHandler = require('../middleware/errorHandler');
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const entries = await db.collection('entries').find({}).toArray();
+    const entries = await db.collection("entries").find({}).toArray();
     res.json(entries);
   } catch (err) {
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       error: {
-        type: 'ServerError',
+        type: "ServerError",
         message: err.message,
-        statusCode: 500
-      }
+        statusCode: 500,
+      },
     });
   }
 });
@@ -79,17 +81,17 @@ router.get('/', async (req, res) => {
  *         description: Entry not found
  */
 // GET single entry
-router.get('/:id', validateObjectId, async (req, res) => {
+router.get("/:id", validateObjectId, async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const entry = await db.collection('entries').findOne({ 
-      _id: new ObjectId(req.params.id) 
+    const entry = await db.collection("entries").findOne({
+      _id: new ObjectId(req.params.id),
     });
-    
-    if (!entry) return res.status(404).json({ message: 'Entry not found' });
+
+    if (!entry) return res.status(404).json({ message: "Entry not found" });
     res.json(entry);
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -120,34 +122,35 @@ router.get('/:id', validateObjectId, async (req, res) => {
  *         description: Server error
  */
 // POST create entry
-router.post('/',
-   validateEntryData, 
-   errorHandler, 
-   async (req, res) => {
+router.post(
+  "/",
+  ensureAuthenticated,
+  validateEntryData,
+  errorHandler,
+  async (req, res) => {
     const entry = {
       title: req.body.title,
       content: req.body.content,
       userId: new ObjectId(req.body.userId),
       createdAt: new Date(),
       tags: req.body.tags || [],
-      mood: req.body.mood || 'neutral',
-      visibility: req.body.visibility || 'private'
+      mood: req.body.mood || "neutral",
+      visibility: req.body.visibility || "private",
     };
-    
+
     try {
       const db = req.app.locals.db;
-      const result = await db.collection('entries').insertOne(entry);
-      const newEntry = await db.collection('entries').findOne({ 
-        _id: result.insertedId 
+      const result = await db.collection("entries").insertOne(entry);
+      const newEntry = await db.collection("entries").findOne({
+        _id: result.insertedId,
       });
-      
+
       res.status(201).json(newEntry);
     } catch (err) {
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: "Server error" });
     }
   }
 );
-
 
 /**
  * @swagger
@@ -180,7 +183,9 @@ router.post('/',
  *         description: Entry not found
  */
 // PUT update entry
-router.put('/:id', 
+router.put(
+  "/:id",
+  ensureAuthenticated,
   validateObjectId,
   validateEntryData,
   async (req, res) => {
@@ -190,31 +195,29 @@ router.put('/:id',
         title: req.body.title,
         content: req.body.content,
         tags: req.body.tags || [],
-        mood: req.body.mood || 'neutral',
-        visibility: req.body.visibility || 'private',
-        updatedAt: new Date()
+        mood: req.body.mood || "neutral",
+        visibility: req.body.visibility || "private",
+        updatedAt: new Date(),
       };
-      
-      const result = await db.collection('entries').updateOne(
-        { _id: new ObjectId(req.params.id) },
-        { $set: updateData }
-      );
-      
+
+      const result = await db
+        .collection("entries")
+        .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
+
       if (result.matchedCount === 0) {
-        return res.status(404).json({ message: 'Entry not found' });
+        return res.status(404).json({ message: "Entry not found" });
       }
-      
-      const updatedEntry = await db.collection('entries').findOne({ 
-        _id: new ObjectId(req.params.id) 
+
+      const updatedEntry = await db.collection("entries").findOne({
+        _id: new ObjectId(req.params.id),
       });
-      
+
       res.json(updatedEntry);
     } catch (err) {
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ message: "Server error" });
     }
   }
 );
-
 
 /**
  * @swagger
@@ -235,20 +238,20 @@ router.put('/:id',
  *         description: Entry not found
  */
 // DELETE entry
-router.delete('/:id', validateObjectId, async (req, res) => {
+router.delete("/:id", validateObjectId, async (req, res) => {
   try {
     const db = req.app.locals.db;
-    const result = await db.collection('entries').deleteOne({ 
-      _id: new ObjectId(req.params.id) 
+    const result = await db.collection("entries").deleteOne({
+      _id: new ObjectId(req.params.id),
     });
-    
+
     if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Entry not found' });
+      return res.status(404).json({ message: "Entry not found" });
     }
-    
-    res.json({ message: 'Entry deleted' });
+
+    res.json({ message: "Entry deleted" });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -347,16 +350,16 @@ router.delete('/:id', validateObjectId, async (req, res) => {
  *                       example: 500
  */
 // POST create entry (temporary simplified version)
-router.post('/', async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     if (!req.body.title || !req.body.content) {
       return res.status(400).json({
         success: false,
         error: {
-          type: 'ValidationError',
-          message: 'Title and content are required',
-          statusCode: 400
-        }
+          type: "ValidationError",
+          message: "Title and content are required",
+          statusCode: 400,
+        },
       });
     }
 
@@ -366,29 +369,27 @@ router.post('/', async (req, res) => {
       userId: new ObjectId(req.body.userId),
       createdAt: new Date(),
       tags: req.body.tags || [],
-      mood: req.body.mood || 'neutral',
-      visibility: req.body.visibility || 'private'
+      mood: req.body.mood || "neutral",
+      visibility: req.body.visibility || "private",
     };
-    
+
     const db = req.app.locals.db;
-    const result = await db.collection('entries').insertOne(entry);
-    const newEntry = await db.collection('entries').findOne({ 
-      _id: result.insertedId 
+    const result = await db.collection("entries").insertOne(entry);
+    const newEntry = await db.collection("entries").findOne({
+      _id: result.insertedId,
     });
-    
+
     res.status(201).json(newEntry);
   } catch (err) {
     res.status(500).json({
       success: false,
       error: {
-        type: 'ServerError',
+        type: "ServerError",
         message: err.message,
-        statusCode: 500
-      }
+        statusCode: 500,
+      },
     });
   }
 });
-
-
 
 module.exports = router;
