@@ -12,7 +12,7 @@ const router = express.Router();
  *       200:
  *         description: List of categories
  */
- router.get("/", async (req, res) => {
+router.get("/", async (req, res) => {
   const db = req.app.locals.db;
   const Categories = new (require("../models/categoriesModel"))(db);
   res.json(await Categories.getAll());
@@ -70,10 +70,14 @@ router.get("/:id", async (req, res) => {
  *         description: Missing name
  */
 router.post("/", async (req, res) => {
+  const { name, description } = req.body;
+  if (!name || typeof name !== "string" || name.trim() === "") {
+    return res
+      .status(400)
+      .json({ error: "Name is required and must be a non-empty string." });
+  }
   const db = req.app.locals.db;
   const Categories = new (require("../models/categoriesModel"))(db);
-  const { name, description } = req.body;
-  if (!name) return res.status(400).json({ error: "Missing name" });
   const result = await Categories.create({ name, description });
   res.status(201).json(result);
 });
@@ -102,6 +106,10 @@ router.post("/", async (req, res) => {
  *         description: Category updated
  */
 router.put("/:id", async (req, res) => {
+  const { name, description } = req.body;
+  if (name && (typeof name !== "string" || name.trim() === "")) {
+    return res.status(400).json({ error: "Name must be a non-empty string." });
+  }
   const db = req.app.locals.db;
   const Categories = new (require("../models/categoriesModel"))(db);
   const result = await Categories.update(req.params.id, req.body);

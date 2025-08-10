@@ -108,16 +108,17 @@ router.get("/:id", validateObjectId, errorHandler, async (req, res) => {
  *         description: Server error
  */
 router.post("/", async (req, res) => {
-  const comment = {
-    entryId: req.body.entryId,
-    userId: req.body.userId,
-    text: req.body.text,
-    createdAt: new Date(),
-  };
-  if (!comment.entryId || !comment.userId || !comment.text) {
+  const { entryId, userId, text } = req.body;
+  if (!entryId || typeof entryId !== "string") {
+    return res.status(400).json({ error: "Valid entryId is required." });
+  }
+  if (!userId || typeof userId !== "string") {
+    return res.status(400).json({ error: "Valid userId is required." });
+  }
+  if (!text || typeof text !== "string" || text.trim() === "") {
     return res
       .status(400)
-      .json({ message: "entryId, userId, and text are required" });
+      .json({ error: "Text is required and must be a non-empty string." });
   }
   try {
     const db = req.app.locals.db;
@@ -163,7 +164,11 @@ router.post("/", async (req, res) => {
  *       500:
  *         description: Server error
  */
-router.put("/:id", validateObjectId, async (req, res) => {
+router.put("/:id", async (req, res) => {
+  const { text } = req.body;
+  if (text && (typeof text !== "string" || text.trim() === "")) {
+    return res.status(400).json({ error: "Text must be a non-empty string." });
+  }
   try {
     const db = req.app.locals.db;
     const updateData = {
