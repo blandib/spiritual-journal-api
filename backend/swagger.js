@@ -25,8 +25,20 @@ const options = {
           type: "object",
           properties: {
             _id: { type: "string", example: "507f1f77bcf86cd799439011" },
-            name: { type: "string", example: "John Doe" },
+            googleId: { type: "string", example: "1234567890" },
+            displayName: { type: "string", example: "John Doe" },
             email: { type: "string", example: "john@example.com" },
+            firstName: { type: "string", example: "John" },
+            lastName: { type: "string", example: "Doe" },
+          },
+          required: ["googleId", "displayName", "email"],
+          example: {
+            _id: "507f1f77bcf86cd799439011",
+            googleId: "1234567890",
+            displayName: "John Doe",
+            email: "john@example.com",
+            firstName: "John",
+            lastName: "Doe",
           },
         },
         Entry: {
@@ -85,7 +97,6 @@ const options = {
         },
       },
     },
-    
   },
   apis: ["./routes/*.js"],
 };

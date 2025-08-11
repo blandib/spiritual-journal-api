@@ -1,11 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { ObjectId } = require("mongodb");
-const {
-  validateUserData,
-  validateObjectId,
-} = require("../middleware/validators");
-const errorHandler = require("../middleware/errorHandler");
+const User = require("../models/user");
 const ensureAuthenticated = require("../middleware/auth");
 
 /**
@@ -40,8 +35,7 @@ const ensureAuthenticated = require("../middleware/auth");
 // GET all users
 router.get("/", async (req, res) => {
   try {
-    const db = req.app.locals.db;
-    const users = await db.collection("users").find({}).toArray();
+    const users = await User.find();
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -76,12 +70,9 @@ router.get("/", async (req, res) => {
  *         description: Server error
  */
 // GET single user
-router.get("/:id", validateObjectId, errorHandler, async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const db = req.app.locals.db;
-    const user = await db
-      .collection("users")
-      .findOne({ _id: new ObjectId(req.params.id) });
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
@@ -117,36 +108,28 @@ router.get("/:id", validateObjectId, errorHandler, async (req, res) => {
  */
 // POST create user
 router.post("/", ensureAuthenticated, async (req, res) => {
-  const { username, email, password } = req.body;
-  if (!username || typeof username !== "string" || username.trim() === "") {
+  const { googleId, displayName, email, firstName, lastName } = req.body;
+  if (!googleId || !displayName || !email) {
     return res
       .status(400)
-      .json({ error: "Username is required and must be a non-empty string." });
-  }
-  if (!email || typeof email !== "string" || !email.includes("@")) {
-    return res.status(400).json({ error: "Valid email is required." });
-  }
-  if (!password || typeof password !== "string" || password.length < 6) {
-    return res
-      .status(400)
-      .json({ error: "Password must be at least 6 characters." });
+      .json({ error: "googleId, displayName, and email are required." });
   }
 
   try {
-    const db = req.app.locals.db;
-
     // Check for existing email
-    const existingUser = await db
-      .collection("users")
-      .findOne({ email: user.email });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({ message: "Email already exists" });
     }
 
-    const result = await db.collection("users").insertOne(user);
-    const newUser = await db
-      .collection("users")
-      .findOne({ _id: result.insertedId });
+    const newUser = new User({
+      googleId,
+      displayName,
+      email,
+      firstName,
+      lastName,
+    });
+    await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -185,43 +168,18 @@ router.post("/", ensureAuthenticated, async (req, res) => {
  *       500:
  *         description: Server error
  */
-
 // PUT update user
 router.put("/:id", ensureAuthenticated, async (req, res) => {
-  const { username, email, password } = req.body;
-  if (username && (typeof username !== "string" || username.trim() === "")) {
-    return res
-      .status(400)
-      .json({ error: "Username must be a non-empty string." });
-  }
-  if (email && (typeof email !== "string" || !email.includes("@"))) {
-    return res.status(400).json({ error: "Valid email required." });
-  }
-  if (password && (typeof password !== "string" || password.length < 6)) {
-    return res
-      .status(400)
-      .json({ error: "Password must be at least 6 characters." });
-  }
-
+  const { displayName, email, firstName, lastName } = req.body;
   try {
-    const db = req.app.locals.db;
-    const updateData = {
-      name: req.body.name,
-      email: req.body.email,
-      updatedAt: new Date(), // Add update timestamp
-    };
-
-    const result = await db
-      .collection("users")
-      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
-
-    if (result.matchedCount === 0) {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { displayName, email, firstName, lastName, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    );
+    if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    const updatedUser = await db
-      .collection("users")
-      .findOne({ _id: new ObjectId(req.params.id) });
     res.json(updatedUser);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -249,17 +207,12 @@ router.put("/:id", ensureAuthenticated, async (req, res) => {
  *         description: Server error
  */
 // DELETE user
-router.delete("/:id", validateObjectId, async (req, res) => {
+router.delete("/:id", async (req, res) => {
   try {
-    const db = req.app.locals.db;
-    const result = await db
-      .collection("users")
-      .deleteOne({ _id: new ObjectId(req.params.id) });
-
-    if (result.deletedCount === 0) {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
     res.json({ message: "User deleted" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });

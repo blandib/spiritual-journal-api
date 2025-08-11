@@ -3,8 +3,9 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const path = require("path");
-const { MongoClient } = require("mongodb");
+const mongoose = require("mongoose");
 const MongoStore = require("connect-mongo");
+const { MongoClient } = require("mongodb");
 const app = express();
 
 app.use(express.json());
@@ -18,8 +19,15 @@ app.use(
     store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
   })
 );
+
+require("./config/passport")(passport);
 app.use(passport.initialize());
 app.use(passport.session());
+
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 // Database connection
 let client;

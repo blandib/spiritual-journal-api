@@ -49,26 +49,8 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
-  async (req, res) => {
-    const db = req.app.locals.db;
-    const profile = req.user;
-    const usersCollection = db.collection("users");
-
-    // Check if user exists
-    let user = await usersCollection.findOne({ googleId: profile.id });
-    if (!user) {
-      // Store new user
-      user = {
-        googleId: profile.id,
-        name: profile.displayName,
-        email: profile.emails[0].value,
-        photo: profile.photos[0].value,
-        createdAt: new Date(),
-      };
-      await usersCollection.insertOne(user);
-    }
-
-    // Redirect to success page
+  (req, res) => {
+    // User is already created/found by Passport
     res.redirect("/success.html");
   }
 );
