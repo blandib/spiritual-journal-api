@@ -33,7 +33,7 @@ const ensureAuthenticated = require("../middleware/auth");
  *               $ref: '#/components/schemas/Error'
  */
 // GET all users
-router.get("/", async (req, res) => {
+router.get("/",ensureAuthenticated , async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
@@ -218,5 +218,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 module.exports = router;
