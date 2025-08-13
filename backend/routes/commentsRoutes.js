@@ -109,6 +109,7 @@ router.get("/:id", validateObjectId, errorHandler, async (req, res) => {
  */
 router.post("/", async (req, res) => {
   const { entryId, userId, text } = req.body;
+
   if (!entryId || typeof entryId !== "string") {
     return res.status(400).json({ error: "Valid entryId is required." });
   }
@@ -120,6 +121,15 @@ router.post("/", async (req, res) => {
       .status(400)
       .json({ error: "Text is required and must be a non-empty string." });
   }
+
+  const comment = {
+    entryId,
+    userId,
+    text,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+
   try {
     const db = req.app.locals.db;
     const result = await db.collection("comments").insertOne(comment);
@@ -128,9 +138,11 @@ router.post("/", async (req, res) => {
       .findOne({ _id: result.insertedId });
     res.status(201).json(newComment);
   } catch (err) {
+    console.error("Error inserting comment:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 /**
  * @swagger
